@@ -1,0 +1,40 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    - name: Login to ECR
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build & Push Image
+      run: |
+        docker build -t devops-microservice:latest -f docker/Dockerfile .
+        docker tag devops-microservice:latest ${{ secrets.ECR_URL }}:latest
+        docker push ${{ secrets.ECR_URL }}:latest
+
+    - name: Deploy on EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          docker pull ${{ secrets.ECR_URL }}:latest
+          docker stop microservice || true
+          docker rm microservice || true
+          docker run -d -p 8000:8000 --name microservice ${{ secrets.ECR_URL }}:latest
