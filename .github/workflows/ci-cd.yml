@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Configure AWS
+    - name: Configure AWS (CI)
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -34,7 +34,10 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_KEY }}
         script: |
+          # ✅ Use EC2 IAM Role for ECR login
           aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_URL }}
+          
+          # ✅ Pull and run container
           docker pull ${{ secrets.ECR_URL }}:latest
           docker stop microservice || true
           docker rm microservice || true
