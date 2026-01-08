@@ -18,7 +18,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ap-south-1
 
-    - name: Login to ECR
+    - name: Login to ECR (CI)
       uses: aws-actions/amazon-ecr-login@v2
 
     - name: Build & Push Image
@@ -34,6 +34,7 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_KEY }}
         script: |
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_URL }}
           docker pull ${{ secrets.ECR_URL }}:latest
           docker stop microservice || true
           docker rm microservice || true
